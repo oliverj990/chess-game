@@ -7,9 +7,16 @@ CURRENT GOAL:
 
 CURRENT TASKS:
 - En passant
-- No "ghosting"
 - Add check checks
 - Add checkmate check
+
+COMPLETED TASKS:
+- Draw board
+- Define pieces
+- Draw pieces
+- Move pieces
+- Restrict to legal moves
+- No ghosting
 
 FUTURE GOALS:
 - Opening trainer
