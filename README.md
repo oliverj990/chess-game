@@ -7,8 +7,11 @@ CURRENT GOAL:
 
 CURRENT TASKS:
 - En passant
-- Add check checks
 - Add checkmate check
+- Write moves to console in chess annotation
+- Add stalemate
+- Add draw by repetition
+- Add board square numbers to chess board
 
 COMPLETED TASKS:
 - Draw board
@@ -16,7 +19,9 @@ COMPLETED TASKS:
 - Draw pieces
 - Move pieces
 - Restrict to legal moves
-- No ghosting
+- Remove ghosting
+- Add checks
+- Add castling
 
 FUTURE GOALS:
 - Opening trainer
