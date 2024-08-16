@@ -41,12 +41,40 @@ def combine_rel_and_fixed_pos(rel_pos, piece):
     if piece.colour == 1:
         combined_pos = (fixed_pos[0] + rel_pos[0], fixed_pos[1] + rel_pos[1])
     else:
-        combined_pos = (fixed_pos[0] - rel_pos[0], fixed_pos[1] - rel_pos[1])
+        combined_pos = (fixed_pos[0] + rel_pos[0], fixed_pos[1] - rel_pos[1])
     return combined_pos
+
+def board_in_check(piece_list):
+
+    black_king_pos = (8, 8)
+    white_king_pos = (8, 8)
+
+    for piece in piece_list:
+        if piece.name == "BlackEKing":
+            black_king_pos = piece.position
+        if piece.name == "WhiteEKing":
+            white_king_pos = piece.position
+    
+    for piece in piece_list:
+        if piece.colour == 1:
+            if black_king_pos in get_legal_moves(piece, piece_list):
+                return 0
+        else:
+            if white_king_pos in get_legal_moves(piece, piece_list):
+                return 1
+    return 42
+
+def board_in_checkmate(piece_list):
+    return False
+
+def pos_numbers_to_letters(pos):
+    alphabet = ["A", "B", "C", "D", "E", "F", "G", "H"]
+    return alphabet[pos[0]] + str(pos[1] + 1)
 
 
 # Get possible moves of a piece given a complete board configuration.
 def get_legal_moves(piece, piece_list):
+    piece_pos = piece.position
     piece_colour = piece.colour
     all_possible_moves = list(piece.moves())
     illegal_moves = []
@@ -79,7 +107,7 @@ def get_legal_moves(piece, piece_list):
     for possible_move in all_possible_moves:
         if get_piece_at(combine_rel_and_fixed_pos(possible_move, piece), piece_list) != None:
             if get_piece_at(combine_rel_and_fixed_pos(possible_move, piece), piece_list).colour != piece_colour:
-                while possible_move in illegal_moves:
+                if possible_move in illegal_moves:
                     illegal_moves.remove(possible_move)
 
     # Add all possible moves which are not in illegal_moves to legal_moves
@@ -88,6 +116,62 @@ def get_legal_moves(piece, piece_list):
             legal_move = combine_rel_and_fixed_pos(possible_move, piece)
             if legal_move[0] in range(8) and legal_move[1] in range(8):
                 legal_moves.append(legal_move)
+
+    # Check for castling
+    if piece.type.name == "KING":
+
+        # Check king hasn't moved
+        if piece.hasMoved:
+            if combine_rel_and_fixed_pos((2, 0), piece) in legal_moves:
+                legal_moves.remove(combine_rel_and_fixed_pos((2, 0), piece))
+            if combine_rel_and_fixed_pos((-2, 0), piece) in legal_moves:
+                legal_moves.remove(combine_rel_and_fixed_pos((-2, 0), piece))
+
+        # Check rook hasn't moved
+        for rook in pieces:
+            if rook.name[-5:] == "HRook" and rook.hasMoved:
+                if combine_rel_and_fixed_pos((2, 0), piece) in legal_moves:
+                    legal_moves.remove(combine_rel_and_fixed_pos((2, 0), piece))
+            elif rook.name[-5:] == "ARook" and rook.hasMoved:
+                if combine_rel_and_fixed_pos((-2, 0), piece) in legal_moves:
+                    legal_moves.remove(combine_rel_and_fixed_pos((-2, 0), piece))
+        
+        # Check if castling would be a capture
+        if get_piece_at(combine_rel_and_fixed_pos((2, 0), piece), pieces) != None:
+            if combine_rel_and_fixed_pos((2, 0), piece) in legal_moves:
+                legal_moves.remove(combine_rel_and_fixed_pos((2, 0), piece))
+        if get_piece_at(combine_rel_and_fixed_pos((-2, 0), piece), pieces) != None:
+            if combine_rel_and_fixed_pos((-2, 0), piece) in legal_moves:
+                legal_moves.remove(combine_rel_and_fixed_pos((-2, 0), piece))
+
+    # Check for weird pawn moves
+    if piece.type.name == "PAWN":
+
+        # Check for double-move
+        if piece.hasMoved:
+            illegal_move = combine_rel_and_fixed_pos((0, 2), piece)
+            if illegal_move in legal_moves:
+                legal_moves.remove(illegal_move)
+        
+        # Block pawn advance
+        piece_in_front = get_piece_at(combine_rel_and_fixed_pos((0, 1), piece), piece_list)
+        if piece_in_front != None:
+            if piece_in_front.position in legal_moves:
+                legal_moves.remove(piece_in_front.position)
+        
+        # Only allow diagonal for captures
+        diagonals = [(1, 1), (-1, 1)]
+        for diag_pos in diagonals:
+            diag_piece = get_piece_at(combine_rel_and_fixed_pos(diag_pos, piece), piece_list)
+            if diag_piece != None:
+                if diag_piece.colour == piece_colour:
+                    if diag_piece.position in legal_moves:
+                        legal_moves.remove(diag_piece.position)
+            if diag_piece == None:
+                if combine_rel_and_fixed_pos(diag_pos, piece) in legal_moves:
+                    legal_moves.remove(combine_rel_and_fixed_pos(diag_pos, piece))
+        
+        # Check for en passant
 
     return legal_moves
 
@@ -98,6 +182,7 @@ def main():
     clock = pygame.time.Clock()
     selected_piece = None
     whose_turn = 1
+    last_move = ((-1, -1,), (-2, -2))
 
     while run:
         clock.tick(60)
@@ -117,24 +202,63 @@ def main():
                 clicked_coords = pygame.mouse.get_pos()
                 clicked_pos = coords_to_pos(clicked_coords)
                 clicked_piece = get_piece_at(clicked_pos, pieces)
+
                 
                 # Select a piece.
                 if clicked_piece != None and selected_piece == None:
-                    print(get_legal_moves(clicked_piece, pieces))
+                    if clicked_piece.colour == whose_turn:
+                        selected_piece = clicked_piece
+                elif clicked_piece != None and selected_piece != None and clicked_pos not in get_legal_moves(selected_piece, pieces):
                     if clicked_piece.colour == whose_turn:
                         selected_piece = clicked_piece
                 # Play move with selected piece.
-                elif clicked_piece != None and selected_piece != None and clicked_pos not in get_legal_moves(selected_piece, pieces):
-                    print(get_legal_moves(clicked_piece, pieces))
-                    if clicked_piece.colour == whose_turn:
-                        selected_piece = clicked_piece
                 elif selected_piece != None and clicked_pos in get_legal_moves(selected_piece, pieces):
-                    selected_piece.hasMoved = True
-                    selected_piece.position = clicked_pos
-                    selected_piece = None
-                    whose_turn = 1 - whose_turn
+                    selected_pos = selected_piece.position
+
                     if clicked_piece != None:
                         pieces.remove(clicked_piece)
+
+                    selected_piece.position = clicked_pos
+
+                    # If in check, move is not permitted
+                    if board_in_check(pieces) == whose_turn:
+                        selected_piece.position = selected_pos
+                        pieces.append(selected_piece)
+                    else:
+                        # Move rook in case of castling
+                        if selected_pos in ((4, 0), (4, 7)) and selected_piece.type.name == "KING":
+                            rook_name = ""
+                            rook_pos = (-1, -1)
+                            if clicked_pos == (6, 0):
+                                rook_name = "WhiteHRook"
+                                rook_pos = (5, 0)
+                            elif clicked_pos == (2, 0):
+                                rook_name = "WhiteARook"
+                                rook_pos = (3, 0)
+                            elif clicked_pos == (6, 7):
+                                rook_name = "BlackHRook"
+                                rook_pos = (5, 7)
+                            elif clicked_pos == (2, 7):
+                                rook_name = "BlackARook"
+                                rook_pos = (3, 7)
+                            for rook in pieces:
+                                if rook.name == rook_name:
+                                    rook.position = rook_pos
+                        
+                        #Update game data
+                        last_move = (selected_pos, clicked_pos)
+                        selected_piece.hasMoved = True
+                        selected_piece = None
+                        whose_turn = 1 - whose_turn
+
+
+                        # Print game details
+                        if whose_turn == 1:
+                            print(pos_numbers_to_letters(clicked_pos) + ". It is now white's turn.")
+                        else:
+                            print(pos_numbers_to_letters(clicked_pos) + ". It is now black's turn.")
+                        if board_in_check(pieces) != 42:
+                            print("Check!")
         
         pygame.display.update()
     
