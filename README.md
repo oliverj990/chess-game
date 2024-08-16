@@ -1,6 +1,4 @@
-==========================================
 Python-based chess game made from scratch.
-==========================================
 
 CURRENT GOAL:
 - Functional chess game for two-player local play.
