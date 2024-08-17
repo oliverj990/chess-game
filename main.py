@@ -1,16 +1,13 @@
 import pygame
-import math
-from piece_init import Piece, PieceType, pieces, pos_to_coords, coords_to_pos, KNIGHT, PAWN, KING
-pygame.init()
+from piece_init import pieces, coords_to_pos
 
+pygame.init()
 WIDTH, HEIGHT = 880, 880
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chess")
-# last move played
-# selected piece
-# game finished/result
+font = pygame.font.SysFont(None, 25)
 
-#COLOURS
+# Board background colours
 dark_brown = (123, 69, 51) #light dull beige
 light_brown = (185, 122, 87) #dark dull beige/brown
 
@@ -25,9 +22,22 @@ def draw_board(game_window, colour1, colour2):
     for i in range(8):
         for j in range(4):
             pygame.draw.rect(game_window, colour2, (110 * i, 770 - 220 * j - (i % 2) * 110, 110, 110))
+    
+    alphabet = ["A", "B", "C", "D", "E", "F", "G", "H"]
+    for i in range(4):
+        j = i + 1
+        dark_letter = font.render(alphabet[2*i], True, dark_brown)
+        light_letter = font.render(alphabet[2*i + 1], True, light_brown)
+        game_window.blit(dark_letter, (3 + 220 * i, 863))
+        game_window.blit(light_letter, (113 + 220 * i, 863))
+        dark_number = font.render(str(8 - 2*i), True, dark_brown)
+        light_number = font.render(str(7 - 2*i), True, light_brown)
+        game_window.blit(dark_number, (867, 3 + 220 * i))
+        game_window.blit(light_number, (867, 113 + 220 * i))
 
 
 
+# Get piece at given square
 def get_piece_at(position, piece_list):
     for piece in piece_list:
         if piece.position == position:
@@ -35,7 +45,7 @@ def get_piece_at(position, piece_list):
     return None
 
 
-
+# Combine relative position (move) with current piece position
 def combine_rel_and_fixed_pos(rel_pos, piece):
     fixed_pos = piece.position
     if piece.colour == 1:
@@ -44,29 +54,57 @@ def combine_rel_and_fixed_pos(rel_pos, piece):
         combined_pos = (fixed_pos[0] + rel_pos[0], fixed_pos[1] - rel_pos[1])
     return combined_pos
 
+
+# Check if white or black is in check
 def board_in_check(piece_list):
 
     black_king_pos = (8, 8)
     white_king_pos = (8, 8)
 
     for piece in piece_list:
-        if piece.name == "BlackEKing":
+        if piece.name == "BlackKing":
             black_king_pos = piece.position
-        if piece.name == "WhiteEKing":
+        if piece.name == "WhiteKing":
             white_king_pos = piece.position
-    
+
     for piece in piece_list:
+        # Black in check
         if piece.colour == 1:
             if black_king_pos in get_legal_moves(piece, piece_list):
                 return 0
+        # White in check
         else:
             if white_king_pos in get_legal_moves(piece, piece_list):
                 return 1
     return 42
 
-def board_in_checkmate(piece_list):
-    return False
 
+# Check if white or black is in checkmate
+def board_in_checkmate(piece_list):
+    output = False
+    current_check = board_in_check(piece_list)
+    if current_check == 42:
+        return output
+    # Iterate through all moves of all pieces
+    for piece in piece_list:
+        if piece.colour != current_check:
+            continue
+        legal_moves = get_legal_moves(piece, piece_list)
+        start_pos = piece.position
+        for legal_move in legal_moves:
+            new_square_piece = get_piece_at(legal_move, piece_list)
+            if new_square_piece != None:
+                piece_list.remove(new_square_piece)
+            piece.position = legal_move
+            if board_in_check(piece_list) != 42:
+                output = True
+            piece.position = start_pos
+            if new_square_piece != None:
+                piece_list.append(new_square_piece)
+    return output
+
+
+# Convert position to chess square notation
 def pos_numbers_to_letters(pos):
     alphabet = ["A", "B", "C", "D", "E", "F", "G", "H"]
     return alphabet[pos[0]] + str(pos[1] + 1)
@@ -86,7 +124,7 @@ def get_legal_moves(piece, piece_list):
             illegal_moves.append(possible_move)
 
     # Add all multiples of captures to illegal_moves list
-    if piece.type != KNIGHT:
+    if piece.type.name != "KNIGHT":
         temp_fixed_list = list(illegal_moves)
         for illegal_move in temp_fixed_list:
             x, y = 0, 0
@@ -203,7 +241,6 @@ def main():
                 clicked_pos = coords_to_pos(clicked_coords)
                 clicked_piece = get_piece_at(clicked_pos, pieces)
 
-                
                 # Select a piece.
                 if clicked_piece != None and selected_piece == None:
                     if clicked_piece.colour == whose_turn:
@@ -213,6 +250,7 @@ def main():
                         selected_piece = clicked_piece
                 # Play move with selected piece.
                 elif selected_piece != None and clicked_pos in get_legal_moves(selected_piece, pieces):
+                    already_check = board_in_check(pieces)
                     selected_pos = selected_piece.position
 
                     if clicked_piece != None:
@@ -221,9 +259,11 @@ def main():
                     selected_piece.position = clicked_pos
 
                     # If in check, move is not permitted
-                    if board_in_check(pieces) == whose_turn:
+                    if board_in_check(pieces) == whose_turn or (selected_piece.type.name == "KING" and selected_pos in ((4, 0), (4, 7)) and clicked_pos in ((6, 0), (6, 7), (2, 7), (2, 0)) and already_check == selected_piece.colour):
                         selected_piece.position = selected_pos
                         pieces.append(selected_piece)
+                        if clicked_piece != None:
+                            pieces.append(clicked_piece)
                     else:
                         # Move rook in case of castling
                         if selected_pos in ((4, 0), (4, 7)) and selected_piece.type.name == "KING":
@@ -251,13 +291,14 @@ def main():
                         selected_piece = None
                         whose_turn = 1 - whose_turn
 
-
                         # Print game details
                         if whose_turn == 1:
                             print(pos_numbers_to_letters(clicked_pos) + ". It is now white's turn.")
                         else:
                             print(pos_numbers_to_letters(clicked_pos) + ". It is now black's turn.")
-                        if board_in_check(pieces) != 42:
+                        if board_in_checkmate(pieces):
+                            print("Checkamte!")
+                        elif board_in_check(pieces) != 42:
                             print("Check!")
         
         pygame.display.update()
@@ -265,5 +306,5 @@ def main():
     pygame.quit()
 
 
-
-main()
+if __name__ == "__main__":
+    main()
