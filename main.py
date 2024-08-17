@@ -297,7 +297,7 @@ def main():
                         else:
                             print(pos_numbers_to_letters(clicked_pos) + ". It is now black's turn.")
                         if board_in_checkmate(pieces):
-                            print("Checkamte!")
+                            print("Checkmate!")
                         elif board_in_check(pieces) != 42:
                             print("Check!")
         
