@@ -5,7 +5,6 @@ CURRENT GOAL:
 - Functional chess game for two-player local play.
 
 CURRENT TASKS:
-- Add stalemate
 - Add draw by repetition
 - Load position from FEN (Forsyth-Edwards Notation)
 - Record game in PGN (Portable Game Notation)
@@ -26,6 +25,7 @@ COMPLETED TASKS:
 - Add checkmate check
 - Add board square numbers to chess board
 - En passant
+- Add stalemate
 - Fixed check/checkmate bug
 
 FUTURE IDEAS:
