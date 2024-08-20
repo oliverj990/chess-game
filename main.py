@@ -81,10 +81,10 @@ def board_in_check(piece_list, last_move):
 
 # Check if white or black is in checkmate
 def board_in_checkmate(piece_list, last_move):
-    output = False
+    output = True
     current_check = board_in_check(piece_list, last_move)
     if current_check == 42:
-        return output
+        return False
     # Iterate through all moves of all pieces
     for piece in piece_list:
         if piece.colour != current_check:
@@ -96,8 +96,8 @@ def board_in_checkmate(piece_list, last_move):
             if new_square_piece != None:
                 piece_list.remove(new_square_piece)
             piece.position = legal_move
-            if board_in_check(piece_list, last_move) != 42:
-                output = True
+            if board_in_check(piece_list, last_move) == 42:
+                output = False
             piece.position = start_pos
             if new_square_piece != None:
                 piece_list.append(new_square_piece)
