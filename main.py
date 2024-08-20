@@ -104,6 +104,19 @@ def board_in_checkmate(piece_list, last_move):
     return output
 
 
+# Check if board is in stalemate
+def board_in_stalemate(piece_list, whose_turn, last_move):
+
+    for piece in piece_list:
+        if piece.colour != whose_turn:
+            continue
+        legal_moves = get_legal_moves(piece, piece_list, last_move)
+        if len(legal_moves) > 0:
+            return True
+
+    return False
+
+
 # Convert position to chess square notation
 def pos_numbers_to_letters(pos):
     alphabet = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -307,6 +320,8 @@ def main():
                             print("Checkmate!")
                         elif board_in_check(pieces, last_move) != 42:
                             print("Check!")
+                        elif board_in_stalemate(pieces, whose_turn, last_move):
+                            print("Stalemate!")
         
         pygame.display.update()
     
