@@ -112,9 +112,9 @@ def board_in_stalemate(piece_list, whose_turn, last_move):
             continue
         legal_moves = get_legal_moves(piece, piece_list, last_move)
         if len(legal_moves) > 0:
-            return True
+            return False
 
-    return False
+    return True
 
 
 # Convert position to chess square notation
@@ -232,12 +232,51 @@ def get_legal_moves(piece, piece_list, last_move):
 
 
 
+def piece_list_to_fen1(piece_list):
+    fen = ""
+    for i in range(8):
+        fen_row = ""
+        row_pieces = {}
+        for j in range(8):
+            row_pieces[j] = None
+        for piece in piece_list:
+            if piece.position[1] == i:
+                row_pieces[piece.position[0]] = piece
+        counter = 0
+        for j in range(8):
+            row_piece = row_pieces[j]
+            if row_piece != None:
+                piece_type = row_piece.type.name
+                if piece_type == "KNIGHT":
+                    piece_type = "N"
+                else:
+                    piece_type = piece_type[0]
+                if row_piece.colour == 0: piece_type = piece_type.lower()
+                if counter != 0:
+                    fen_row += str(counter)
+                fen_row += piece_type
+                counter = 0
+            elif row_piece == None:
+                counter += 1
+                if j == 7 and counter > 0:
+                    fen_row += str(counter)
+        fen = fen_row + "/" + fen
+    return fen[:-1]
+
+
+
+def fen_to_piece_list(fen):
+    return
+
+
+
 def main():
     run = True
     clock = pygame.time.Clock()
     selected_piece = None
     whose_turn = 1
     last_move = ((-1, -1,), (-2, -2))
+    positions = []
 
     while run:
         clock.tick(60)
@@ -310,6 +349,8 @@ def main():
                         selected_piece.hasMoved = True
                         selected_piece = None
                         whose_turn = 1 - whose_turn
+                        pos_fen = piece_list_to_fen1(pieces)
+                        positions.append(pos_fen)
 
                         # Print game details
                         if whose_turn == 1:
@@ -322,6 +363,9 @@ def main():
                             print("Check!")
                         elif board_in_stalemate(pieces, whose_turn, last_move):
                             print("Stalemate!")
+                        elif positions.count(pos_fen) == 3:
+                            print("Draw by repetition.")
+                        
         
         pygame.display.update()
     
